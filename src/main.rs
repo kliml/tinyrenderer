@@ -3,20 +3,19 @@ use image::{ImageBuffer, Pixel, Rgb};
 use num;
 use std::mem;
 use tobj;
+use rand::Rng;
 
 mod geometry;
 use geometry::ToSimpleMesh;
-use geometry::Vec3f;
+use geometry::{ Vec3f, Triangle };
 
 fn line(
-    x0: i32,
-    y0: i32,
-    x1: i32,
-    y1: i32,
+    v0: &Vec3f,
+    v1: &Vec3f,
     image: &mut ImageBuffer<Rgb<u8>, Vec<u8>>,
     color: Rgb<u8>,
 ) {
-    let (mut x0, mut x1, mut y0, mut y1) = (x0, x1, y0, y1);
+    let (mut x0, mut x1, mut y0, mut y1) = (v0.x as i32, v1.x as i32, v0.y as i32, v1.y as i32);
     let mut steep = false;
     if num::abs(x0 - x1) < num::abs(y0 - y1) {
         mem::swap(&mut x0, &mut y0);
@@ -48,38 +47,51 @@ fn line(
     }
 }
 
+
 fn triangle(
-    t0: &Vec3f,
-    t1: &Vec3f,
-    t2: &Vec3f,
+    v0: Vec3f,
+    v1: Vec3f,
+    v2: Vec3f,
     image: &mut ImageBuffer<Rgb<u8>, Vec<u8>>,
     color: Rgb<u8>,
 ) {
-    line(
-        t0.x as i32,
-        t0.y as i32,
-        t1.x as i32,
-        t1.y as i32,
-        image,
-        color,
-    );
-    line(
-        t0.x as i32,
-        t0.y as i32,
-        t2.x as i32,
-        t2.y as i32,
-        image,
-        color,
-    );
-    line(
-        t1.x as i32,
-        t1.y as i32,
-        t2.x as i32,
-        t2.y as i32,
-        image,
-        color,
-    );
+    let (v0, v1, v2) = (&mut v0.clone(), &mut v1.clone(), &mut v2.clone());
+
+    if v0.y > v1.y { mem::swap(v0, v1) };
+    if v0.y > v2.y { mem::swap(v0, v2) };
+    if v1.y > v2.y { mem::swap(v1, v2) };
+
+    let total_height = v2.y - v0.y;
+
+    for y in (v0.y as i32)..(v1.y as i32) {
+        let segment_height: i32 = v1.y as i32 - v0.y as i32 + 1;
+        let alpha: f32 = (y - v0.y as i32) as f32 / total_height as f32;
+        let beta: f32 = (y - v0.y as i32) as f32 / segment_height as f32;
+        let mut Ax = v0.x + (v2.x - v0.x) * alpha;
+        let mut Ay = v0.y + (v2.y - v0.y) * alpha;
+        let mut Bx = v0.x + (v1.x - v0.x) * beta;
+        let mut By = v0.y + (v1.x - v0.y) * beta;
+        if Ax > Bx { mem::swap(&mut Ax, &mut Bx); mem::swap(&mut Ay, &mut By)};
+        for x in (Ax as i32)..(Bx as i32) {
+            image.put_pixel(x as u32, y as u32, color);
+        }
+    }
+    for y in (v1.y as i32)..(v2.y as i32) {
+        let segment_height: i32 = v2.y as i32 - v1.y as i32 + 1;
+        let alpha: f32 = (y - v0.y as i32) as f32 / total_height as f32;
+        let beta: f32 = (y - v1.y as i32) as f32 / segment_height as f32;
+        let mut Ax = v0.x + (v2.x - v0.x) * alpha;
+        let mut Ay = v0.y + (v2.y - v0.y) * alpha;
+        let mut Bx = v1.x + (v2.x - v1.x) * beta;
+        let mut By = v1.y + (v2.x - v1.y) * beta;
+        if Ax > Bx { mem::swap(&mut Ax, &mut Bx); mem::swap(&mut Ay, &mut By)};
+        for x in (Ax as i32)..(Bx as i32) {
+            image.put_pixel(x as u32, y as u32, color);
+        }
+    }
 }
+
+
 
 fn main() {
     let white = Rgb::from_channels(255, 255, 255, 255);
@@ -96,130 +108,35 @@ fn main() {
     println!("Uploading model: {}", models[0].name);
     let mesh = &models[0].mesh;
 
-    // let mut faces = vec![];
-    // let mut next_face = 0;
-    // for f in 0..mesh.num_face_indices.len() {
-    //     let end = next_face + mesh.num_face_indices[f] as usize;
-    //     let face_indices: Vec<_> = mesh.indices[next_face..end].iter().collect();
-    //     faces.push(face_indices);
-    //     next_face = end;
-    // }
+    let object = mesh.to_simple_mesh();
+    for t in object.triangles {
+        let mut screen_coords: [Vec3f; 3] = t.vertices;
+        for i in 0..3 {
 
-    // let mut vertices = vec![];
-    // for v in (0..mesh.positions.len()).step_by(3) {
-    //     let vertice: Vec<_> = mesh.positions[v..v+3].iter().collect();
-    //     vertices.push(vertice);
-    // }
+            let world_coords = t.vertices[i]; 
+            screen_coords[i] = Vec3f{
+                x: (world_coords.x + 1.) * width as f32 / 2.,
+                y: (world_coords.y + 1.) * height as f32 / 2.,
+                z: 0.0,
+            };
 
-    // for face in &faces {
-    //     for i in 0..3 {
-    //         let vert1 = &vertices[*face[i] as usize];
-    //         let vert2 = &vertices[*face[(i+1)%3] as usize];
+            // println!("{} {}", screen_coords[0].x, screen_coords[0].y);
+            
+            // let vert1 = triangle.vertices[i];
+            // let vert2 = triangle.vertices[(i + 1) % 3];
 
-    //         let x0 = ((vert1[0]+1.)*width as f32 *0.5) as i32;
-    //         let y0 = ((vert1[1]+1.)*height as f32 *0.5) as i32;
-    //         let x1 = ((vert2[0]+1.)*width as f32 *0.5) as i32;
-    //         let y1 = ((vert2[1]+1.)*height as f32 *0.5) as i32;
+            // let x0 = ((vert1.x +1.)*width as f32 *0.5) as i32;
+            // let y0 = ((vert1.y +1.)*height as f32 *0.5) as i32;
+            // let x1 = ((vert2.x +1.)*width as f32 *0.5) as i32;
+            // let y1 = ((vert2.y +1.)*height as f32 *0.5) as i32; 
 
-    //         line(x0, y0, x1, y1, &mut imgbuf, white);
-    //     }
-    // }
+            //line(x0, y0, x1, y1, &mut imgbuf, white);
+        }
 
-    let t0 = geometry::Triangle {
-        vertices: [
-            Vec3f {
-                x: 10.0,
-                y: 70.0,
-                z: 0.0,
-            },
-            Vec3f {
-                x: 50.0,
-                y: 160.0,
-                z: 0.0,
-            },
-            Vec3f {
-                x: 70.0,
-                y: 80.0,
-                z: 0.0,
-            },
-        ],
-    };
-    let t1 = geometry::Triangle {
-        vertices: [
-            Vec3f {
-                x: 180.0,
-                y: 50.0,
-                z: 0.0,
-            },
-            Vec3f {
-                x: 150.0,
-                y: 1.0,
-                z: 0.0,
-            },
-            Vec3f {
-                x: 70.0,
-                y: 180.0,
-                z: 0.0,
-            },
-        ],
-    };
-    let t2 = geometry::Triangle {
-        vertices: [
-            Vec3f {
-                x: 180.0,
-                y: 150.0,
-                z: 0.0,
-            },
-            Vec3f {
-                x: 120.0,
-                y: 160.0,
-                z: 0.0,
-            },
-            Vec3f {
-                x: 130.0,
-                y: 180.0,
-                z: 0.0,
-            },
-        ],
-    };
-
-    triangle(
-        &t0.vertices[0],
-        &t0.vertices[1],
-        &t0.vertices[2],
-        &mut imgbuf,
-        red,
-    );
-    triangle(
-        &t1.vertices[0],
-        &t1.vertices[1],
-        &t1.vertices[2],
-        &mut imgbuf,
-        white,
-    );
-    triangle(
-        &t2.vertices[0],
-        &t2.vertices[1],
-        &t2.vertices[2],
-        &mut imgbuf,
-        green,
-    );
-
-    // let object = mesh.to_simple_mesh();
-    // for triangle in object.triangles {
-    //     let points = triangle.raw();
-    //     for i in 0..3 {
-    //         let vert1 = points[i];
-    //         let vert2 = points[(i + 1) % 3];
-
-    //         let x0 = ((vert1[0] +1.)*width as f32 *0.5) as i32;
-    //         let y0 = ((vert1[1] +1.)*height as f32 *0.5) as i32;
-    //         let x1 = ((vert2[0] +1.)*width as f32 *0.5) as i32;
-    //         let y1 = ((vert2[1] +1.)*height as f32 *0.5) as i32;
-
-    //         line(x0, y0, x1, y1, &mut imgbuf, white);
-    //     }
-    // }
+        let mut rng = rand::thread_rng();
+        let color = Rgb::from_channels(rng.gen_range(0, 255), rng.gen_range(0, 255), rng.gen_range(0, 255), 255);
+        triangle(screen_coords[0], screen_coords[1], screen_coords[2], &mut imgbuf, color);
+    }
 
     imgbuf = flip_vertical(&imgbuf);
 

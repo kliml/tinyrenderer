@@ -1,3 +1,4 @@
+use std::ops::{Add, AddAssign, Mul, Neg, Sub};
 use tobj::Mesh;
 
 #[derive(Debug, PartialEq, PartialOrd, Copy, Clone)]
@@ -5,6 +6,50 @@ pub struct Vec3f {
     pub x: f32,
     pub y: f32,
     pub z: f32,
+}
+
+impl Mul for Vec3f {
+    type Output = Self;
+    fn mul(self, other: Vec3f) -> Vec3f {
+        Vec3f {
+            x: self.x * other.x,
+            y: self.y * other.y,
+            z: self.z * other.z,
+        }
+    }
+}
+
+impl Mul<f32> for Vec3f {
+    type Output = Self;
+    fn mul(self, other: f32) -> Vec3f {
+        Vec3f {
+            x: self.x * other,
+            y: self.y * other,
+            z: self.z * other,
+        }
+    }
+}
+
+impl Add for Vec3f {
+    type Output = Self;
+    fn add(self, other: Vec3f) -> Vec3f {
+        Vec3f {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            z: self.z + other.z,
+        }
+    }
+}
+
+impl Sub for Vec3f {
+    type Output = Self;
+    fn sub(self, other: Vec3f) -> Vec3f {
+        Vec3f {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            z: self.z - other.z,
+        }
+    }
 }
 
 pub struct Triangle {
