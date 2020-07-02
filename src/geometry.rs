@@ -1,17 +1,21 @@
-use std::ops::{Add, AddAssign, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Mul, Neg, Sub };
+
 use tobj::Mesh;
 
 #[derive(Debug, PartialEq, PartialOrd, Copy, Clone)]
-pub struct Vec3f {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
+pub struct Vec3<T> {
+    pub x: T,
+    pub y: T,
+    pub z: T,
 }
 
-impl Mul for Vec3f {
+impl<T> Mul for Vec3<T>
+where
+    T: Mul<Output = T> + Copy,
+{
     type Output = Self;
-    fn mul(self, other: Vec3f) -> Vec3f {
-        Vec3f {
+    fn mul(self, other: Vec3<T>) -> Vec3<T> {
+        Vec3::<T> {
             x: self.x * other.x,
             y: self.y * other.y,
             z: self.z * other.z,
@@ -19,10 +23,13 @@ impl Mul for Vec3f {
     }
 }
 
-impl Mul<f32> for Vec3f {
+impl<T> Mul<T> for Vec3<T>
+where
+    T: Mul<Output = T> + Copy,
+{
     type Output = Self;
-    fn mul(self, other: f32) -> Vec3f {
-        Vec3f {
+    fn mul(self, other: T) -> Vec3<T> {
+        Vec3::<T> {
             x: self.x * other,
             y: self.y * other,
             z: self.z * other,
@@ -30,10 +37,13 @@ impl Mul<f32> for Vec3f {
     }
 }
 
-impl Add for Vec3f {
+impl<T> Add for Vec3<T>
+where
+    T: Add<Output = T> + Copy,
+{
     type Output = Self;
-    fn add(self, other: Vec3f) -> Vec3f {
-        Vec3f {
+    fn add(self, other: Vec3<T>) -> Vec3<T> {
+        Vec3::<T> {
             x: self.x + other.x,
             y: self.y + other.y,
             z: self.z + other.z,
@@ -41,16 +51,73 @@ impl Add for Vec3f {
     }
 }
 
-impl Sub for Vec3f {
+impl<T> Sub for Vec3<T>
+where
+    T: Sub<Output = T> + Copy,
+{
     type Output = Self;
-    fn sub(self, other: Vec3f) -> Vec3f {
-        Vec3f {
+    fn sub(self, other: Vec3<T>) -> Vec3<T> {
+        Vec3::<T> {
             x: self.x - other.x,
             y: self.y - other.y,
             z: self.z - other.z,
         }
     }
 }
+
+pub type Vec3f = Vec3<f32>;
+pub type Vec3i = Vec3<i32>;
+
+// #[derive(Debug, PartialEq, PartialOrd, Copy, Clone)]
+// pub struct Vec3f {
+//     pub x: f32,
+//     pub y: f32,
+//     pub z: f32,
+// }
+
+// impl Mul for Vec3f {
+//     type Output = Self;
+//     fn mul(self, other: Vec3f) -> Vec3f {
+//         Vec3f {
+//             x: self.x * other.x,
+//             y: self.y * other.y,
+//             z: self.z * other.z,
+//         }
+//     }
+// }
+
+// impl Mul<f32> for Vec3f {
+//     type Output = Self;
+//     fn mul(self, other: f32) -> Vec3f {
+//         Vec3f {
+//             x: self.x * other,
+//             y: self.y * other,
+//             z: self.z * other,
+//         }
+//     }
+// }
+
+// impl Add for Vec3f {
+//     type Output = Self;
+//     fn add(self, other: Vec3f) -> Vec3f {
+//         Vec3f {
+//             x: self.x + other.x,
+//             y: self.y + other.y,
+//             z: self.z + other.z,
+//         }
+//     }
+// }
+
+// impl Sub for Vec3f {
+//     type Output = Self;
+//     fn sub(self, other: Vec3f) -> Vec3f {
+//         Vec3f {
+//             x: self.x - other.x,
+//             y: self.y - other.y,
+//             z: self.z - other.z,
+//         }
+//     }
+// }
 
 pub struct Triangle {
     pub vertices: [Vec3f; 3],

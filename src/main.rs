@@ -7,7 +7,7 @@ use rand::Rng;
 
 mod geometry;
 use geometry::ToSimpleMesh;
-use geometry::{ Vec3f, Triangle };
+use geometry::{ Vec3f, Vec3i, Triangle };
 
 fn line(
     v0: &Vec3f,
@@ -99,7 +99,7 @@ fn main() {
     let green = Rgb::from_channels(0, 255, 0, 255);
 
     let (width, height) = (800, 800);
-    let mut imgbuf: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::new(width, height + 1);
+    let mut imgbuf: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::new(width, height);
 
     let obj = tobj::load_obj("obj/african_head.obj", true);
 
@@ -120,17 +120,6 @@ fn main() {
                 z: 0.0,
             };
 
-            // println!("{} {}", screen_coords[0].x, screen_coords[0].y);
-            
-            // let vert1 = triangle.vertices[i];
-            // let vert2 = triangle.vertices[(i + 1) % 3];
-
-            // let x0 = ((vert1.x +1.)*width as f32 *0.5) as i32;
-            // let y0 = ((vert1.y +1.)*height as f32 *0.5) as i32;
-            // let x1 = ((vert2.x +1.)*width as f32 *0.5) as i32;
-            // let y1 = ((vert2.y +1.)*height as f32 *0.5) as i32; 
-
-            //line(x0, y0, x1, y1, &mut imgbuf, white);
         }
 
         let mut rng = rand::thread_rng();
