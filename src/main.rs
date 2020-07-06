@@ -1,6 +1,7 @@
 use image::imageops::*;
 use image::{ImageBuffer, Pixel, Rgb};
 use num;
+use std::cmp;
 use std::mem;
 use tobj;
 use rand::Rng;
@@ -90,6 +91,30 @@ fn triangle(
         }
     }
 }
+// http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html#algo2
+fn barycentric(
+    v0: Vec3i,
+    v1: Vec3i,
+    v2: Vec3i,
+    image: &mut ImageBuffer<Rgb<u8>, Vec<u8>>,
+    color: Rgb<u8>,
+) {
+    let max_x =  cmp::max(v0.x, cmp::max(v1.x, v2.x));
+    let max_y =  cmp::max(v0.y, cmp::max(v1.y, v2.y));
+    let min_x =  cmp::min(v0.x, cmp::min(v1.x, v2.x));
+    let min_y =  cmp::min(v0.y, cmp::min(v1.y, v2.y));
+
+    let vs1 = v1 - v0;
+    let vs2 = v2 - v0;
+
+    for x in min_x..=max_x {
+        for y in min_y..=max_y {
+            unimplemented!();
+        }
+    }
+
+
+}
 
 fn main() {
     let white = Rgb::from_channels(255, 255, 255, 255);
@@ -141,5 +166,5 @@ fn main() {
 
     imgbuf = flip_vertical(&imgbuf);
 
-    imgbuf.save("res/head2.png").unwrap();
+    imgbuf.save("res/test.png").unwrap();
 }
