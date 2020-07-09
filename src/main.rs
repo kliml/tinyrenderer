@@ -48,7 +48,6 @@ fn line(
     }
 }
 
-
 fn triangle(
     v0: Vec3i,
     v1: Vec3i,
@@ -109,11 +108,16 @@ fn barycentric(
 
     for x in min_x..=max_x {
         for y in min_y..=max_y {
-            unimplemented!();
+            let q = Vec3i{ x: x - v0.x, y: y - v0.y, z: 0 };
+
+            let s = (q.x * vs2.y - q.y * vs2.x) as f32 / (vs1.x * vs2.y - vs1.y * vs2.x) as f32;
+            let t = (vs1.x * q.y - vs1.y * q.x) as f32/ (vs1.x * vs2.y - vs1.y * vs2.x) as f32; 
+
+            if (s >= 0.0) && (t >= 0.0) && (s + t <= 1.0) {
+                image.put_pixel(x as u32, y as u32, color);
+            }
         }
     }
-
-
 }
 
 fn main() {
@@ -156,6 +160,7 @@ fn main() {
             let color = (intensity * 255.0) as u8;
             let color = Rgb::from_channels(color, color, color, 255);
             triangle(screen_coords[0], screen_coords[1], screen_coords[2], &mut imgbuf, color);
+            //barycentric(screen_coords[0], screen_coords[1], screen_coords[2], &mut imgbuf, color);
         }
 
         // Colored head
