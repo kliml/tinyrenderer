@@ -95,6 +95,7 @@ fn barycentric(
     v0: Vec3i,
     v1: Vec3i,
     v2: Vec3i,
+    z_buffer: &mut [i32],
     image: &mut ImageBuffer<Rgb<u8>, Vec<u8>>,
     color: Rgb<u8>,
 ) {
@@ -114,7 +115,18 @@ fn barycentric(
             let t = (vs1.x * q.y - vs1.y * q.x) as f32/ (vs1.x * vs2.y - vs1.y * vs2.x) as f32; 
 
             if (s >= 0.0) && (t >= 0.0) && (s + t <= 1.0) {
-                image.put_pixel(x as u32, y as u32, color);
+                let mut z = 0;
+                z += v0.z * s as i32;
+                z += v0.z * t as i32;
+                let indx = if x + y * 800 > 800 * 800 -1{
+                    800 * 800 - 1
+                } else {
+                    x + y * 800
+                };
+                if z_buffer[indx as usize] < z {
+                    z_buffer[indx as usize] = z;
+                    image.put_pixel(x as u32, y as u32, color);
+                }
             }
         }
     }
@@ -126,9 +138,10 @@ fn main() {
     let green = Rgb::from_channels(0, 255, 0, 255);
 
     let light_dir = Vec3f{ x: 0.0, y: 0.0, z: -1.0 };
-
+    let mut z_buffer: [i32; 800 * 800] = [i32::MIN; 800 * 800]; 
+    
     let (width, height) = (800, 800);
-    let mut imgbuf: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::new(width, height);
+    let mut imgbuf: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::new(width, height + 1);
 
     let obj = tobj::load_obj("obj/african_head.obj", true);
 
@@ -155,21 +168,15 @@ fn main() {
         let normalization_multiplier = 1.0 / n.norm(); 
         n = n * normalization_multiplier as f32;
         let intensity = n.scalar_mul(&light_dir);
-        eprintln!("{}", intensity);
+        //eprintln!("{}", intensity);
         if intensity > 0.0 {
             let color = (intensity * 255.0) as u8;
             let color = Rgb::from_channels(color, color, color, 255);
-            triangle(screen_coords[0], screen_coords[1], screen_coords[2], &mut imgbuf, color);
-            //barycentric(screen_coords[0], screen_coords[1], screen_coords[2], &mut imgbuf, color);
+            barycentric(screen_coords[0], screen_coords[1], screen_coords[2], &mut z_buffer,&mut imgbuf, color);
         }
-
-        // Colored head
-        // let mut rng = rand::thread_rng();
-        // let color = Rgb::from_channels(rng.gen_range(0, 255), rng.gen_range(0, 255), rng.gen_range(0, 255), 255);
-        // triangle(screen_coords[0], screen_coords[1], screen_coords[2], &mut imgbuf, color);
     }
 
     imgbuf = flip_vertical(&imgbuf);
 
-    imgbuf.save("res/test.png").unwrap();
+    imgbuf.save("res/head3.png").unwrap();
 }
