@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, Mul, Neg, Sub, Div, BitXor };
+use std::ops::{Add, AddAssign, BitXor, Div, Mul, Neg, Sub};
 
 use tobj::Mesh;
 
@@ -9,7 +9,7 @@ pub struct Vec3<T> {
     pub z: T,
 }
 
-impl<T> Vec3<T> 
+impl<T> Vec3<T>
 where
     T: Mul<Output = T> + Add<Output = T> + Copy + MyNum,
 {
