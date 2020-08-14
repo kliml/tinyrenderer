@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, BitXor, Div, Mul, Neg, Sub};
+use std::ops::{Add, BitXor, Div, Mul, Sub};
 
 use tobj::Mesh;
 
@@ -11,7 +11,7 @@ pub struct Vec3<T> {
 
 impl<T> Vec3<T>
 where
-    T: Mul<Output = T> + Add<Output = T> + Copy + MyNum,
+    T: Mul<Output = T> + Add<Output = T> + Sub<Output = T> + Copy + MyNum,
 {
     pub fn norm(&self) -> f32 {
         let norm: f32 = (self.x * self.x + self.y * self.y + self.z * self.z).to_f32();
@@ -24,6 +24,14 @@ where
 
     pub fn scalar_mul(&self, other: &Vec3<T>) -> T {
         return self.x * other.x + self.y * other.y + self.z * other.z;
+    }
+
+    pub fn cross(v1: &Vec3<T>, v2: &Vec3<T>) -> Vec3<T> {
+        Vec3::<T> {
+            x:v1.y*v2.z - v1.z*v2.y,
+            y:v1.z*v2.x - v1.x*v2.z,
+            z:v1.x*v2.y - v1.y*v2.x,
+        }
     }
 }
 

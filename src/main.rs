@@ -98,7 +98,6 @@ fn triangle(
     }
 }
 // http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html#algo2
-// https://answers.unity.com/questions/383804/calculate-uv-coordinates-of-3d-point-on-plane-of-m.html
 fn barycentric(
     v0: Vec3i,
     v1: Vec3i,
@@ -123,20 +122,73 @@ fn barycentric(
                 z: 0,
             };
 
-            let s = (q.x * vs2.y - q.y * vs2.x) as f32 / (vs1.x * vs2.y - vs1.y * vs2.x) as f32;
-            let t = (vs1.x * q.y - vs1.y * q.x) as f32 / (vs1.x * vs2.y - vs1.y * vs2.x) as f32;
+            let divider = (vs1.x * vs2.y - vs1.y * vs2.x) as f32;
+            let s = (q.x * vs2.y - q.y * vs2.x) as f32 / divider;
+            let t = (vs1.x * q.y - vs1.y * q.x) as f32 / divider;
 
             if (s >= 0.0) && (t >= 0.0) && (s + t <= 1.0) {
                 let mut z = 0;
                 z += v0.z * s as i32;
                 z += v0.z * t as i32;
+                
                 let indx = if x + y * 800 > 800 * 800 - 1 {
+                    println!("{}", x + y * 800);
                     800 * 800 - 1
                 } else {
+                    
                     x + y * 800
                 };
+                println!("{} {} {}", x, y, z);
                 if z_buffer[indx as usize] < z {
                     z_buffer[indx as usize] = z;
+                    image.put_pixel(x as u32, y as u32, color);
+                }
+            }
+        }
+    }
+}
+
+fn barycentric2(
+    v0: Vec3f,
+    v1: Vec3f,
+    v2: Vec3f,
+    z_buffer: &mut [f32],
+    image: &mut ImageBuffer<Rgb<u8>, Vec<u8>>,
+    intensity: f32,
+    color: Rgb<u8>,
+) {
+    let max_x = f32::max(v0.x, f32::max(v1.x, v2.x)) as i32;
+    let max_y = f32::max(v0.y, f32::max(v1.y, v2.y)) as i32;
+    let min_x = f32::min(v0.x, f32::min(v1.x, v2.x)) as i32;
+    let min_y = f32::min(v0.y, f32::min(v1.y, v2.y)) as i32;
+
+    let vs1 = v1 - v0;
+    let vs2 = v2 - v0;
+
+    for x in min_x..=max_x {
+        for y in min_y..=max_y {
+            let q = Vec3f {
+                x: x as f32 - v0.x,
+                y: y as f32 - v0.y,
+                z: v0.z,
+            };
+
+            let divider = (vs1.x * vs2.y - vs1.y * vs2.x) as f32;
+            let s = (q.x * vs2.y - q.y * vs2.x) as f32 / divider;
+            let t = (vs1.x * q.y - vs1.y * q.x) as f32 / divider;
+
+            if (s >= 0.0) && (t >= 0.0) && (s + t <= 1.0) {
+                let mut z = 0.0;
+                z += v0.z * s;
+                z += v1.z * t;
+                z += v2.z * (1.0 - s - t);
+                
+                let indx = x + y * 800;
+                println!("{} {} {}", x, y, z);
+                if z_buffer[indx as usize] < z {
+                    z_buffer[indx as usize] = z;
+                    // let color = (z * 255.0) as u8;
+                    // let color = Rgb::from_channels(color, color, color, 255);
                     image.put_pixel(x as u32, y as u32, color);
                 }
             }
@@ -154,7 +206,7 @@ fn main() {
         y: 0.0,
         z: -1.0,
     };
-    let mut z_buffer: [i32; 800 * 800] = [i32::MIN; 800 * 800];
+    let mut z_buffer: [f32; 800 * 800] = [f32::MIN; 800 * 800];
 
     let (width, height) = (800, 800);
     let mut imgbuf: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::new(width, height + 1);
@@ -168,7 +220,7 @@ fn main() {
 
     let object = mesh.to_simple_mesh();
     for t in object.triangles {
-        let mut screen_coords: [Vec3i; 3] = [Vec3i { x: 0, y: 0, z: 0 }; 3];
+        let mut screen_coords: [Vec3f; 3] = [Vec3f{ x: 0.0, y: 0.0, z: 0.0 }; 3];
         let mut world_coords: [Vec3f; 3] = [Vec3f {
             x: 0.0,
             y: 0.0,
@@ -176,10 +228,10 @@ fn main() {
         }; 3];
         for i in 0..3 {
             let v = t.vertices[i];
-            screen_coords[i] = Vec3i {
-                x: ((v.x + 1.) * width as f32 / 2.) as i32,
-                y: ((v.y + 1.) * height as f32 / 2.) as i32,
-                z: 0,
+            screen_coords[i] = Vec3f {
+                x: ((v.x + 1.) * width as f32 / 2.) as f32,
+                y: ((v.y + 1.) * height as f32 / 2.) as f32,
+                z: v.z,
             };
             world_coords[i] = v;
         }
@@ -191,18 +243,27 @@ fn main() {
         if intensity > 0.0 {
             let color = (intensity * 255.0) as u8;
             let color = Rgb::from_channels(color, color, color, 255);
-            barycentric(
+            barycentric2(
                 screen_coords[0],
                 screen_coords[1],
                 screen_coords[2],
                 &mut z_buffer,
                 &mut imgbuf,
+                intensity,
                 color,
             );
         }
     }
 
+    // z buffer
+    // for x in 0..800 {
+    //     for y in 0..800 {
+    //         let color = (z_buffer[x + y * 800] * 255.0) as u8;
+    //         imgbuf.put_pixel(x as u32, y as u32, Rgb::from_channels(color, color, color, 255));
+    //     }
+    // }
+
     imgbuf = flip_vertical(&imgbuf);
 
-    imgbuf.save("res/head3.png").unwrap();
+    imgbuf.save("res/test.png").unwrap();
 }
